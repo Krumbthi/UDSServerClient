@@ -18,7 +18,7 @@ STABLE = 1
 # ----------------------------------------------------------------------------------------------------------------------
 def dispatch_data(data):
     js_data = json.loads(data.decode('utf-8').strip())
-    js_data['a'] -= 1
+    js_data['data'] = 1
     js_data['b'] -= 1
     js_data['c'] -= 1
     return js_data
@@ -53,9 +53,8 @@ def main():
     message = dict()
 
     # Send data
-    message['a'] = 0
-    message['b'] = 0
-    message['c'] = 0
+    message['data'] = 0
+    message['state'] = 'stopped'
 
     if STABLE:
         # Create a UDS socket
@@ -72,21 +71,35 @@ def main():
             sys.exit(1)
 
         try:
-            while counter <= 10:
+            while counter <= 11:
+                if counter == 2:
+                    message['state'] = 'running'
+                elif counter == 10:
+                    message['state'] = 'stopped'
+                elif counter == 11:
+                    message['state'] = 'kill'
+
                 Logger.debug("sending \"%s\"" % message)
                 sock.sendall(json.dumps(message).encode("utf-8"))
 
-                amount_received = 0
-                amount_expected = len(message)
+                #amount_received = 0
+                #amount_expected = len(message)
 
-                while amount_received < amount_expected:
-                    data = sock.recv(4096)
-                    amount_received += len(data)
+                #while amount_received < amount_expected:
+                data = sock.recv(4096)
+                #    amount_received += len(data)
+                
+                if len(data) > 0:
                     Logger.debug("received \"%s\"" % data)
                     #message.update(dispatch_data(data))
+                    message['data'] = json.loads(data.decode())['data']
                     counter += 1
+                else: 
+                    Logger.debug("empty Message")
 
                 time.sleep(2)
+        except BrokenPipeError as err:
+            Logger.debug(err)
 
         finally:
             Logger.debug('closing socket')
