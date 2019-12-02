@@ -39,7 +39,7 @@ class GlobalTimer(object):
         self._start_timer()
 
 
-Scheduler = GlobalTimer(0.2)
+Scheduler = GlobalTimer(0.5)
 
 class Server(asyncio.Protocol):
     def __init__(self):
@@ -57,7 +57,7 @@ class Server(asyncio.Protocol):
         if ret['state'] == 'kill':
             Scheduler.unregister_callback(self.doSomething)
             Logger.debug("dying")
-            sys.exit(0)
+            #sys.exit(0)
 
         self.Message['state'] = ret['state']
         self.transport.write(json.dumps(self.Message).encode())
@@ -67,6 +67,7 @@ class Server(asyncio.Protocol):
             self.Counter += 1
             self.Message['data'] = self.Counter
             Logger.debug(self.Message)
+            self.transport.write(json.dumps(self.Message).encode())
 
 
 async def main_proto():
